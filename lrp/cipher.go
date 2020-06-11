@@ -74,6 +74,13 @@ func (lrp LrpMultiCipher) Cipher(idx int) *LrpCipher {
 	}
 }
 
+func (lrp LrpMultiCipher) CipherForMAC(idx int) *LrpForMAC {
+	c := lrp.Cipher(idx)
+	return &LrpForMAC{
+		*c,
+	}
+}
+
 type LrpCipher struct {
 	Multi   *LrpMultiCipher
 	Key     []byte
@@ -133,6 +140,10 @@ func (lrp *LrpCipher) EncryptAll(src []byte, padEvenBlocks bool) []byte {
 	return dst
 }
 
+func (lrp *LrpCipher) Encrypt(dst, src []byte) {
+	lrp.CryptBlocks(dst[0:blocksize], src[0:blocksize])
+}
+
 func (lrp *LrpCipher) Decrypt(dst, src []byte) {
 }
 
@@ -173,4 +184,25 @@ func (lrp *LrpCipher) CryptBlocks(dst, src []byte) {
 		copy(dst[blockstart:blockend], encryptedBlock)
 		lrp.Counter++
 	}
+}
+
+type LrpForMAC struct {
+	LrpCipher
+}
+
+
+func nibbles(bytes []byte) []int {
+	nibbles := []int{}
+	for _, x := range bytes {
+		msb := 0b11110000 & x
+		msb = msb >> 4
+		lsb := 0b00001111 & x
+		nibbles = append(nibbles, int(msb), int(lsb))
+	}
+	return nibbles
+}
+
+func (lrp *LrpForMAC) Encrypt(dst, src []byte) {
+	result := lrp.EvalLRP(nibbles(src), true)
+	copy(dst[0:blocksize], result)
 }

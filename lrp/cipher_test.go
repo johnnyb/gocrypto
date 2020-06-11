@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 	"testing"
+	"github.com/aead/cmac"
 )
 
 func mustDecodeString(str string) []byte {
@@ -15,17 +16,6 @@ func mustDecodeString(str string) []byte {
 		panic(err)
 	}
 	return v
-}
-
-func nibbles(bytes []byte) []int {
-	nibbles := []int{}
-	for _, x := range bytes {
-		msb := 0b11110000 & x
-		msb = msb >> 4
-		lsb := 0b00001111 & x
-		nibbles = append(nibbles, int(msb), int(lsb))
-	}
-	return nibbles
 }
 
 func TestCipher(t *testing.T) {
@@ -171,6 +161,40 @@ func TestEncryption(t *testing.T) {
 		result := lrp.EncryptAll(mustDecodeString(test.Plaintext), test.Pad)
 		if !bytes.Equal(result, mustDecodeString(test.Cyphertext)) {
 			t.Errorf("Error encrypting %d - received %s", idx + 1, hex.EncodeToString(result))
+		}
+	}
+}
+
+type MacTestCase struct {
+	Key string
+	Message string
+	Result string
+}
+
+func TestCMAC(t *testing.T) {
+	tests := []MacTestCase{
+		MacTestCase{
+			Key: "63A0169B4D9FE42C72B2784C806EAC21",
+			Message: "",
+			Result: "0E07C601970814A4176FDA633C6FC3DE",
+		},
+		MacTestCase{
+			Key: "8195088CE6C393708EBBE6C7914ECB0B",
+			Message: "BBD5B85772C7",
+			Result: "AD8595E0B49C5C0DB18E77355F5AAFF6",			
+		},
+	}
+
+	for idx, test := range tests {
+		k := mustDecodeString(test.Key)
+		msg := mustDecodeString(test.Message)
+		c := NewStandardCipher(k)
+		lrp := c.CipherForMAC(0)
+		h, _ := cmac.NewWithTagSize(lrp, 16)
+		h.Write(msg)
+		result := h.Sum(nil)
+		if !bytes.Equal(result, mustDecodeString(test.Result)) {
+			t.Errorf("Bad MAC case %d: %s", idx + 1, hex.EncodeToString(result))
 		}
 	}
 }
