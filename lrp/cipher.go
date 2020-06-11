@@ -32,6 +32,7 @@ func NewStandardCipher(key []byte) *LrpMultiCipher {
 var upper = []byte{0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}
 var lower = []byte{0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa}
 var zeroBlock = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+var fullBlockPadding = []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
 func encryptWith(key []byte, data []byte) []byte {
 	c, err := aes.NewCipher(key)
@@ -76,7 +77,7 @@ func (lrp LrpMultiCipher) Cipher(idx int) *LrpCipher {
 type LrpCipher struct {
 	Multi   *LrpMultiCipher
 	Key     []byte
-	Counter int
+	Counter int64
 }
 
 func (lrp *LrpCipher) EvalLRP(x []int, final bool) []byte {
@@ -99,19 +100,26 @@ func (lrp *LrpCipher) BlockSize() int {
 	return blocksize
 }
 
-func (lrp *LrpCipher) EncryptAll(src []byte) []byte {
+func (lrp *LrpCipher) EncryptAll(src []byte, padEvenBlocks bool) []byte {
 	oldcounter := lrp.Counter
 	length := len(src)
 	var dst []byte
 
 	if length == 0 {
 		dst = make([]byte, blocksize)
-		lrp.CryptBlocks(dst, []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+		lrp.CryptBlocks(dst, fullBlockPadding)
 	} else {
 		if len(src)%blocksize == 0 {
-			dst = make([]byte, len(src))
-			lrp.CryptBlocks(dst, src)
-
+			if padEvenBlocks {
+				newsrc := make([]byte, len(src))
+				copy(newsrc, src)
+				newsrc = append(newsrc, fullBlockPadding...)
+				dst = make([]byte, len(newsrc))
+				lrp.CryptBlocks(dst, newsrc)
+			} else {
+				dst = make([]byte, len(src))
+				lrp.CryptBlocks(dst, src)	
+			}
 		} else {
 			numblocks := (len(src) / blocksize) + 1
 			newsrc := make([]byte, numblocks*blocksize)
@@ -134,12 +142,12 @@ func (lrp *LrpCipher) CounterPieces() []int {
 	pieces := []int{}
 
 	bits := lrp.Multi.M
-	bitmask := (1 << bits) - 1
+	bitmask := int64((1 << bits) - 1)
 
 	ctr := lrp.Counter
 	for ctr != 0 {
 		low := ctr & bitmask
-		pieces = append([]int{low}, pieces...)
+		pieces = append([]int{int(low)}, pieces...)
 		ctr = ctr >> bits
 	}
 
@@ -163,5 +171,6 @@ func (lrp *LrpCipher) CryptBlocks(dst, src []byte) {
 		y := lrp.EvalLRP(x, true)
 		encryptedBlock := encryptWith(y, block)
 		copy(dst[blockstart:blockend], encryptedBlock)
+		lrp.Counter++
 	}
 }
