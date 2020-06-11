@@ -81,7 +81,7 @@ type LrpCipher struct {
 }
 
 func (lrp *LrpCipher) EvalLRP(x []int, final bool) []byte {
-	l := len(x) % len(lrp.Multi.P)
+	l := len(x)
 
 	// Algorithm 3 (pg. 6)
 	y := lrp.Key
