@@ -198,3 +198,15 @@ func TestCMAC(t *testing.T) {
 		}
 	}
 }
+
+func TestDecryption(t *testing.T) {
+	k := mustDecodeString("17372747274711110695823184637465")
+	c := NewStandardCipher(k)
+	lrp := c.Cipher(2)
+
+	message := "Hello there"
+	result := string(lrp.DecryptAll(lrp.EncryptAll([]byte(message), true), true))
+	if message != result {
+		t.Errorf("Encryption/decryption failed: Received %s", result)
+	}
+}

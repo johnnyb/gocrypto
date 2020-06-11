@@ -34,6 +34,18 @@ var lower = []byte{0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0
 var zeroBlock = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 var fullBlockPadding = []byte{0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 
+func decryptWith(key []byte, data []byte) []byte {
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+
+	result := make([]byte, len(data))
+	c.Decrypt(result, data)
+
+	return result
+}
+
 func encryptWith(key []byte, data []byte) []byte {
 	c, err := aes.NewCipher(key)
 	if err != nil {
@@ -144,7 +156,46 @@ func (lrp *LrpCipher) Encrypt(dst, src []byte) {
 	lrp.CryptBlocks(dst[0:blocksize], src[0:blocksize])
 }
 
+func (lrp *LrpCipher) DecryptAll(src []byte, removePadding bool) []byte {
+	oldcounter := lrp.Counter
+
+	dst := make([]byte, len(src))
+	lrp.DecryptBlocks(dst, src)
+
+	dividerByteIndex := len(dst) - 1
+
+	for dst[dividerByteIndex] != 0x80 {
+		dividerByteIndex--
+	}
+
+	lrp.Counter = oldcounter
+
+	return dst[0:dividerByteIndex]
+}
+
 func (lrp *LrpCipher) Decrypt(dst, src []byte) {
+	lrp.DecryptBlocks(dst[0:blocksize], src[0:blocksize])
+}
+
+func (lrp *LrpCipher) DecryptBlocks(dst, src []byte) {
+	// Algorithm 5 (pg. 8)
+	srcblocks := len(src) / blocksize
+	numblocks := len(dst) / blocksize
+	if srcblocks < numblocks {
+		numblocks = srcblocks
+	}
+
+	for i := 0; i < numblocks; i++ {
+		blockstart := i * blocksize
+		blockend := blockstart + blocksize
+		block := src[blockstart:blockend]
+		x := lrp.CounterPieces()
+		// l := len(x)
+		y := lrp.EvalLRP(x, true)
+		decryptedBlock := decryptWith(y, block)
+		copy(dst[blockstart:blockend], decryptedBlock)
+		lrp.Counter++
+	}
 }
 
 var blocksize = 16
@@ -189,7 +240,6 @@ func (lrp *LrpCipher) CryptBlocks(dst, src []byte) {
 type LrpForMAC struct {
 	LrpCipher
 }
-
 
 func nibbles(bytes []byte) []int {
 	nibbles := []int{}
