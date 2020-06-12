@@ -53,6 +53,7 @@ func (lrp LrpMultiCipher) Cipher(idx int) *LrpCipher {
 		Multi:   &lrp,
 		Key:     k,
 		Counter: 0,
+		Encrypting: true,
 	}
 }
 

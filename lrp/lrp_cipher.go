@@ -4,6 +4,29 @@ type LrpCipher struct {
 	Multi   *LrpMultiCipher
 	Key     []byte
 	Counter int64
+	Encrypting bool
+}
+
+// Generates a decrypting cipher, compatible with cipher.BlockMode
+func (lrp *LrpCipher) Decrypter() *LrpCipher {
+	newCipher := LrpCipher{
+		Multi: lrp.Multi,
+		Key: lrp.Key,
+		Counter: lrp.Counter,
+		Encrypting: false,
+	}
+	return &newCipher
+}
+
+// Generates a encrypting cipher, compatible with cipher.BlockMode
+func (lrp *LrpCipher) Encrypter() *LrpCipher {
+	newCipher := LrpCipher{
+		Multi: lrp.Multi,
+		Key: lrp.Key,
+		Counter: lrp.Counter,
+		Encrypting: true,
+	}
+	return &newCipher
 }
 
 // Number of bytes in a block
@@ -33,7 +56,7 @@ func (lrp *LrpCipher) EvalLRP(x []int, final bool) []byte {
 // Encrypts the given blocks from src to dst.
 // Based on the smaller of src/dst.  Requires
 // that src is only full blocks.
-func (lrp *LrpCipher) CryptBlocks(dst, src []byte) {
+func (lrp *LrpCipher) EncryptBlocks(dst, src []byte) {
 	// Algorithm 4 (pg. 7)
 	srcblocks := len(src) / blocksize
 	numblocks := len(dst) / blocksize
@@ -77,11 +100,20 @@ func (lrp *LrpCipher) DecryptBlocks(dst, src []byte) {
 	}
 }
 
+/* Standard BlockMode interface functions */
+func (lrp *LrpCipher) CryptBlocks(dst, src []byte) {
+	if lrp.Encrypting {
+		lrp.EncryptBlocks(dst, src)
+	} else {
+		lrp.DecryptBlocks(dst, src)
+	}
+}
+
 /* Standard cipher.Block interface functions */
 
 // Encrypt a single block
 func (lrp *LrpCipher) Encrypt(dst, src []byte) {
-	lrp.CryptBlocks(dst[0:blocksize], src[0:blocksize])
+	lrp.EncryptBlocks(dst[0:blocksize], src[0:blocksize])
 }
 
 // Decrypt a single block
