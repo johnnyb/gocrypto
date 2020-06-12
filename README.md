@@ -1,4 +1,4 @@
-= GoCrypto Extensions
+# GoCrypto Extensions
 
 I'm using this as a repo for crypto extensions I need in Go.  
 Right now, it is focused on the NXP LRP (leakage resistant primitive) 
@@ -8,7 +8,7 @@ Information about LRP can be found [here](https://www.nxp.com/docs/en/applicatio
 and [here](https://www.nxp.com/docs/en/supporting-information/LRP_SI.pdf).
 LRP is primarily used in the NXP 424 DNA NFC chip.
 
-== Usage
+## Usage
 
 LRP uses a single key to seed multiple keys, so the function to create
 the cryptosystem is called `NewStandardMultiCipher(k)`.  This returns
@@ -21,15 +21,20 @@ functions for ease of use.  I suggest that you pass in `true` for the
 padding unless there is a specific reason not to (some NXP functions
 specifically operate without padding).
 
-== CMAC
+## CMAC
 
 NXP uses this cipher for as a drop-in for CMACs, but not in a way that 
 you might expect.  Instead of using the encryption mode for the CMAC,
 it uses a separate internal primitive to do this.  Therefore, to get at
-the encryption mode that is used for generating CMACs, 
-use `CipherForMAC(idx)` instead of `Cipher(idx)`.
+the encryption mode that is used for generating MACs, 
+use `CipherForMAC(idx)` instead of `Cipher(idx)`.  For generating a CMAC
+(which is often done with this protocol), there is a helper function
+`CipherForMAC(idx).MAC()` and `CipherForMAC(idx).ShortMAC()`.  
 
-== Example
+For NXP, Key 0 (`CipherForMAC(0)`) is usually used for generating CMACs, 
+and Key 1 (`Cipher(1)`) is used for encryption/decryption.
+
+## Example
 
 ```
 package main
@@ -56,7 +61,7 @@ func main() {
 
 	fmt.Printf("Here is our original message: %s\n", result)
 
-	// Grab a cipher for doing MACs using Key 2
+	// Grab a cipher for doing MACs using Key 0
 	macCipher := mc.CipherForMAC(0)
 
 	// Generate a MAC
@@ -74,3 +79,7 @@ func main() {
 }
 ```
 
+## Limitations
+
+This library is currently not very optimized.  Most of the test cases, however, 
+were taken directly from the documentation, so it should work correctly.
