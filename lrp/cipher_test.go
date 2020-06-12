@@ -20,7 +20,7 @@ func mustDecodeString(str string) []byte {
 
 func TestCipher(t *testing.T) {
 	k := mustDecodeString("56-78-26-B8-DA-8E-76-84-32-A9-54-8D-BE-4A-A3-A0") // Example on pg. 10
-	c := NewStandardCipher(k)
+	c := NewStandardMultiCipher(k)
 
 	// Did I generate the correct plaintexts?
 	if !bytes.Equal(c.P[0], mustDecodeString("AC-20-D3-9F-53-41-FE-98-DF-CA-21-DA-86-BA-79-14")) {
@@ -110,7 +110,7 @@ func TestLRP(t *testing.T) {
 
 	for idx, tst := range tests {
 		k := mustDecodeString(tst.Key)
-		mc := NewCipher(k, 4)
+		mc := NewMultiCipher(k, 4)
 		c := mc.Cipher(tst.KeyNum)
 		iv := nibbles(mustDecodeString(tst.IV))
 		result := c.EvalLRP(iv, tst.Finalize)
@@ -155,7 +155,7 @@ func TestEncryption(t *testing.T) {
 		},
 	}
 	for idx, test := range tests {
-		c := NewStandardCipher(mustDecodeString(test.Key))
+		c := NewStandardMultiCipher(mustDecodeString(test.Key))
 		lrp := c.Cipher(0)
 		lrp.Counter = test.IV
 		result := lrp.EncryptAll(mustDecodeString(test.Plaintext), test.Pad)
@@ -188,7 +188,7 @@ func TestCMAC(t *testing.T) {
 	for idx, test := range tests {
 		k := mustDecodeString(test.Key)
 		msg := mustDecodeString(test.Message)
-		c := NewStandardCipher(k)
+		c := NewStandardMultiCipher(k)
 		lrp := c.CipherForMAC(0)
 		h, _ := cmac.NewWithTagSize(lrp, 16)
 		h.Write(msg)
@@ -201,7 +201,7 @@ func TestCMAC(t *testing.T) {
 
 func TestDecryption(t *testing.T) {
 	k := mustDecodeString("17372747274711110695823184637465")
-	c := NewStandardCipher(k)
+	c := NewStandardMultiCipher(k)
 	lrp := c.Cipher(2)
 
 	message := "Hello there"

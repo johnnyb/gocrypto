@@ -12,7 +12,7 @@ type LrpMultiCipher struct {
 	P       [][]byte // Plaintexts
 }
 
-func NewCipher(key []byte, nibbleSize int) *LrpMultiCipher {
+func NewMultiCipher(key []byte, nibbleSize int) *LrpMultiCipher {
 	lrp := LrpMultiCipher{
 		MainKey: key,
 		M:       nibbleSize,
@@ -24,8 +24,8 @@ func NewCipher(key []byte, nibbleSize int) *LrpMultiCipher {
 	return &lrp
 }
 
-func NewStandardCipher(key []byte) *LrpMultiCipher {
-	return NewCipher(key, 4)
+func NewStandardMultiCipher(key []byte) *LrpMultiCipher {
+	return NewMultiCipher(key, 4)
 }
 
 // Refers to the values used for upper and lower branches of Figure 1, pg. 4
