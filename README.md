@@ -38,7 +38,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/johnnyb/gocrypto/lrp"
-	"github.com/aead/cmac"
 )
 
 func main() {
@@ -66,6 +65,12 @@ func main() {
 	messageMac := h.Sum(nil)
 
 	fmt.Printf("MAC for message: %s\n", hex.EncodeToString(messageMac))
+
+	// Simpler version
+	messageMac = macCipher.CMAC([]byte(message))
+
+	// 8-byte MAC specified by NXP
+	shortMac := macCipher.ShortCMAC([]byte(message))
 }
 ```
 
