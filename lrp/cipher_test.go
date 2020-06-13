@@ -210,3 +210,7 @@ func TestDecryption(t *testing.T) {
 		t.Errorf("Encryption/decryption failed: Received %s", result)
 	}
 }
+
+func TestCounterSizeMode(t *testing.T) {
+
+}

@@ -4,6 +4,7 @@ type LrpCipher struct {
 	Multi   *LrpMultiCipher
 	Key     []byte
 	Counter int64
+	CounterSize int
 	Encrypting bool
 }
 
@@ -189,10 +190,19 @@ func (lrp *LrpCipher) CounterPieces() []int {
 	bitmask := int64((1 << bits) - 1)
 
 	ctr := lrp.Counter
-	for ctr != 0 {
+	for true {
 		low := ctr & bitmask
 		pieces = append([]int{int(low)}, pieces...)
 		ctr = ctr >> bits
+		if lrp.CounterSize == 0 {
+			if ctr == 0 {
+				break
+			}
+		} else {
+			if len(pieces) == lrp.CounterSize {
+				break
+			}
+		}
 	}
 
 	return pieces

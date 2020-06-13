@@ -83,3 +83,11 @@ func main() {
 
 This library is currently not very optimized.  Most of the test cases, however, 
 were taken directly from the documentation, so it should work correctly.
+
+## Additional Note
+
+In the implementation of LRP, the counter has a specific size: 4 bytes.  
+The LRP standard seems to indicate that the size of the counter for LRP 
+is just based on how many bits you need.  In any case, if you set
+CounterSize on the LrpCipher to 4, you will get the behavior in the chip,
+and if you leave it you will get the behavior in the document.
