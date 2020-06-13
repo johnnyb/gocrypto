@@ -172,8 +172,10 @@ func (lrp *LrpCipher) DecryptAll(src []byte, removePadding bool) []byte {
 
 	dividerByteIndex := len(dst) - 1
 
-	for dst[dividerByteIndex] != 0x80 {
-		dividerByteIndex--
+	if removePadding {
+		for dst[dividerByteIndex] != 0x80 {
+			dividerByteIndex--
+		}
 	}
 
 	lrp.Counter = oldcounter
