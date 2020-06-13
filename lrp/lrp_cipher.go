@@ -192,9 +192,6 @@ func (lrp *LrpCipher) CounterPieces() []int {
 
 	ctr := lrp.Counter
 	for true {
-		low := ctr & bitmask
-		pieces = append([]int{int(low)}, pieces...)
-		ctr = ctr >> bits
 		if lrp.CounterSize == 0 {
 			if ctr == 0 {
 				break
@@ -204,6 +201,10 @@ func (lrp *LrpCipher) CounterPieces() []int {
 				break
 			}
 		}
+
+		low := ctr & bitmask
+		pieces = append([]int{int(low)}, pieces...)
+		ctr = ctr >> bits
 	}
 
 	return pieces
