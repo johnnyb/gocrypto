@@ -1,19 +1,19 @@
 package lrp
 
 type LrpCipher struct {
-	Multi   *LrpMultiCipher
-	Key     []byte
-	Counter int64
+	Multi       *LrpMultiCipher
+	Key         []byte
+	Counter     uint64
 	CounterSize int
-	Encrypting bool
+	Encrypting  bool
 }
 
 // Generates a decrypting cipher, compatible with cipher.BlockMode
 func (lrp *LrpCipher) Decrypter() *LrpCipher {
 	newCipher := LrpCipher{
-		Multi: lrp.Multi,
-		Key: lrp.Key,
-		Counter: lrp.Counter,
+		Multi:      lrp.Multi,
+		Key:        lrp.Key,
+		Counter:    lrp.Counter,
 		Encrypting: false,
 	}
 	return &newCipher
@@ -22,9 +22,9 @@ func (lrp *LrpCipher) Decrypter() *LrpCipher {
 // Generates a encrypting cipher, compatible with cipher.BlockMode
 func (lrp *LrpCipher) Encrypter() *LrpCipher {
 	newCipher := LrpCipher{
-		Multi: lrp.Multi,
-		Key: lrp.Key,
-		Counter: lrp.Counter,
+		Multi:      lrp.Multi,
+		Key:        lrp.Key,
+		Counter:    lrp.Counter,
 		Encrypting: true,
 	}
 	return &newCipher
@@ -122,11 +122,10 @@ func (lrp *LrpCipher) Decrypt(dst, src []byte) {
 	lrp.DecryptBlocks(dst[0:blocksize], src[0:blocksize])
 }
 
-
 /* Convenience functions */
 
 // Encrypt the entire message.  All non-even blocks are padded.
-// Setting padEvenBlocks to true will give you padded blocks no 
+// Setting padEvenBlocks to true will give you padded blocks no
 // matter what.  This is normally what you want, but NXP has
 // a few cases of non-padded encryption.
 func (lrp *LrpCipher) EncryptAll(src []byte, padEvenBlocks bool) []byte {
@@ -147,7 +146,7 @@ func (lrp *LrpCipher) EncryptAll(src []byte, padEvenBlocks bool) []byte {
 				lrp.CryptBlocks(dst, newsrc)
 			} else {
 				dst = make([]byte, len(src))
-				lrp.CryptBlocks(dst, src)	
+				lrp.CryptBlocks(dst, src)
 			}
 		} else {
 			numblocks := (len(src) / blocksize) + 1
@@ -187,7 +186,7 @@ func (lrp *LrpCipher) CounterPieces() []int {
 	pieces := []int{}
 
 	bits := lrp.Multi.M
-	bitmask := int64((1 << bits) - 1)
+	bitmask := uint64((1 << bits) - 1)
 
 	ctr := lrp.Counter
 	for true {
@@ -207,4 +206,3 @@ func (lrp *LrpCipher) CounterPieces() []int {
 
 	return pieces
 }
-
