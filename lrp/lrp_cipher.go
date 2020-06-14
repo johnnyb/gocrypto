@@ -165,22 +165,18 @@ func (lrp *LrpCipher) EncryptAll(src []byte, padEvenBlocks bool) []byte {
 // it was originally padded, and, therefore, whether to remove the
 // padding before it is returned.
 func (lrp *LrpCipher) DecryptAll(src []byte, removePadding bool) []byte {
-	oldcounter := lrp.Counter
-
 	dst := make([]byte, len(src))
 	lrp.DecryptBlocks(dst, src)
 
-	dividerByteIndex := len(dst) - 1
-
 	if removePadding {
+		dividerByteIndex := len(dst) - 1
 		for dst[dividerByteIndex] != 0x80 {
 			dividerByteIndex--
 		}
+		return dst[0:dividerByteIndex]
+	} else {
+		return dst
 	}
-
-	lrp.Counter = oldcounter
-
-	return dst[0:dividerByteIndex]
 }
 
 // Breaks the block counter into nibbles for the EvalLRP primitive
